@@ -13,7 +13,7 @@ std::string playGame();
 int main()
 {
     std::string winner;
-    srand(time(NULL));
+    std::srand(time(NULL));
 
     winner = playGame();
     cout << "\n게임 종료 !!" << winner <<"의 승리입니다." << endl;
@@ -39,7 +39,7 @@ std::string playGame() {
             }
 
             //컴퓨터 1~3 랜덤 숫자 선택.
-            comNum = rand() % 3 + 1;
+            comNum = std::rand() % 3 + 1;
             cout << "컴퓨터가 부른 숫자 !" << endl;
             for (int j = 0; j < comNum; j++) {
                 num++;
