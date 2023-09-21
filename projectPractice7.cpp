@@ -3,9 +3,33 @@
 #include <vector>
 #include <algorithm>
 #include <ctime>
+#include <random>
+#include <windows.h>
+
+// color상수 지정 
+#define BLACK 0 
+#define BLUE 1 
+#define GREEN 2 
+#define CYAN 3 
+#define RED 4 
+#define MAGENTA 5 
+#define BROWN 6 
+#define LIGHTGRAY 7 
+#define DARKGRAY 8 
+#define LIGHTBLUE 9 
+#define LIGHTGREEN 10 
+#define LIGHTCYAN 11 
+#define LIGHTRED 12 
+#define LIGHTMAGENTA 13 
+#define YELLOW 14 
+#define WHITE 15 
+
 
 // 프로젝트7. 클래스 종합 - 게임 만들기
 using namespace std;
+
+
+void textcolor(int foreground, int background);
 
 class Character {
 public:
@@ -17,10 +41,10 @@ public:
 	Character() {}
 
 	//getter,setter
-	void setHp(int chgHp) {
+	static void setHp(int chgHp) {
 		hp = chgHp;
 	}
-	int getHp() {
+	static int getHp() {
 		return hp;
 	}
 	static void setLevel(int chgLevel) {
@@ -29,7 +53,7 @@ public:
 	static int getLevel() {
 		return level;
 	}
-
+	
 	void pickWeapon(string newWeapon) {
 		// 무기추가
 		weapons.push_back(newWeapon);
@@ -72,7 +96,9 @@ public:
 		return attackCnt;
 	}
 	void attack() {
-		cout << "\n      ------ 총쏘기 -------     ( -10 HP )" << endl;
+		textcolor(YELLOW, RED);
+		cout << "\n      ------ 총쏘기 -------     ( -10 HP ) " << endl;
+		textcolor(LIGHTGRAY, BLACK);
 	}
 };
 
@@ -93,7 +119,9 @@ public:
 		return attackCnt;
 	}
 	void attack() {
-		cout << "\n      ------ 찌르기 -------     ( -5 HP )" << endl;
+		textcolor(YELLOW, RED);
+		cout << "\n      ------ 찌르기 -------     ( -5 HP ) " << endl;
+		textcolor(LIGHTGRAY,BLACK);
 	}
 };
 
@@ -106,7 +134,7 @@ public:
 	Monster(){}
 
 	void setMstHp(int chaLevel) {
-		mstHp = chaLevel * 2 * 10;
+		mstHp = chaLevel * 5 * 10;
 	}
 	int getMstHp() {
 		return mstHp;
@@ -122,25 +150,38 @@ public:
 	}
 };
 
+
 int Character::hp = 100;
 int Character::level = 1;
 vector<string> Character::weapons = {};
 int Monster::mstHp = 0;
 string Monster::mstName = "Monster";
-void levelUp(int level);
-void attackM();
+
+void levelUp(int level, int hp);
+void attackGun();
+void attackKnife();
+void showMonster();
+void youDie();
+void showPotential();
+void myHp(int hp);
+//void textcolor(int foreground, int background);
+
 
 int main() {
 	Character c1;
 	bool attacked = false;
-	int action, weaponAcction;
+	int action, weaponAcction, next, yHp, nHp;
 	vector<Weapon*> weaponBasket;
 
 	cout << "-------------------- 게임 시작 -------------------- " << endl;
 	cout << "현재 hp : " << c1.hp << ", level : " << c1.level << endl;
+
+	// 해당 레벨 몬스터 생성.
 	Monster m = Monster();
 	m.setMstHp(c1.level);
 	m.setMstName(c1.level);
+
+	// 무기줍기
 	cout << " >>>>>> 총 발견 >>>> (1:무기줍기, 2:지나가기) : ";
 	cin >> weaponAcction;
 	if (weaponAcction == 1) {
@@ -151,18 +192,29 @@ int main() {
 	if (weaponAcction == 1) {
 		weaponBasket.push_back(new Knife());
 	}
+
+
 	clock_t startTime = clock();
 	while (1) {
-		cout << "\n/////// 도전 몬스터 : " << Monster::mstName << " , hp : " << Monster::mstHp << " ////////" << endl;
-		
+		showMonster();
+		cout << "////// 몬스터 : " << Monster::mstName << " , HP : " << Monster::mstHp << " ///////" << endl;
+		cout << endl;
+
 		// 몬스터 만난지 10초 지나면 데미지.
 		clock_t endTime = clock();
 		if ((endTime - startTime) / CLOCKS_PER_SEC >= 10) {
-			cout << "\n ----------- 몬스터 공격 ◐ㅁ◑ -----------" << endl;
-			cout << "               피해량 : -" << 10 * c1.level << endl;
+			textcolor(YELLOW, RED);
+			cout << "\n ----------- 몬스터 공격 ◐ㅁ◑ ----------" << endl;
+			cout << " ------------ 피해량 : -" << 10 * c1.level << " HP ------------" << endl;
+			textcolor(LIGHTGRAY, BLACK);
 			c1.getDamage(10 * c1.level);
-			cout << "               현재 나의 HP : " << c1.hp << endl;
-			cout << endl;
+			myHp(c1.hp);
+
+			// GAME OVER
+			if (c1.hp <= 0) {
+				youDie();
+				break;
+			}
 		}
 
 		cout << "공격을 선택해주세요. (1:총, 2:칼)";
@@ -179,7 +231,7 @@ int main() {
 				if (pg) {
 					if (action == 1) {
 						pg->attack();
-						attackM();
+						//attackGun();
 						gPower = pg->offensePower;
 						m.getAttack(gPower);
 						attacked = true;
@@ -189,7 +241,7 @@ int main() {
 					int nPower = 0;
 					if (action == 2) {
 						pn->attack();
-						attackM();
+						//attackKnife();
 						nPower = pn->offensePower;
 						m.getAttack(nPower);
 						attacked = true;
@@ -208,9 +260,26 @@ int main() {
 		}
 
 		if (Monster::mstHp <= 0) {
-			cout << "----------------- 몬스터 처치 완료 !! --------------------" << endl;
-			levelUp(c1.level);
-			break;
+			next = 0;
+			textcolor(WHITE, GREEN);
+			cout << "\n----------------------------------------------------" << endl;
+			cout << "--------------- 몬스터 처치 완료 !! ----------------" << endl;
+			cout << "----------------------------------------------------" << endl;
+			textcolor(LIGHTGRAY, BLACK);
+			levelUp(c1.level, c1.hp);
+			cout << "\n다음 레벨 게임을 진행하시겠습니까? (1:YES, 2:EXIT) " << endl;
+			cin >> next;
+			if (next == 1) {
+				// 다음레벨 몬스터 update.
+				m.setMstHp(c1.level);
+				m.setMstName(c1.level);
+				textcolor(WHITE, BLUE);
+				cout << "                 ☞ NEXT STAGE ☜                  " << endl;
+				textcolor(LIGHTGRAY, BLACK);
+			}
+			else if (next == 2) {
+				break;
+			}
 		}
 	}
 
@@ -219,20 +288,129 @@ int main() {
 	}
 }
 
-// 레벨업 함수
-void levelUp(int level) {
+// 레벨업 함수 - 레벨업 선물 증정. (물약 랜덤)
+void levelUp(int level, int hp) {
+	int rNum;
+	srand(time(NULL));
+	rNum = (rand() % 3 + 1)*10;
+	showPotential();
+	cout << "레벨업 선물 : 물약(+"<< rNum <<"HP)을 받았습니다 !!" << endl;
+	hp = hp + rNum;
+	if (hp >= 100) {
+		hp = 100;
+	}
+	Character::setHp(hp);
+	myHp(hp);
 	level++;
-	cout << "☆☆☆☆☆ LEVEL UP !!! ☆☆☆☆☆ " << endl;
+	cout << "\n☆☆☆☆☆ LEVEL UP !!! ☆☆☆☆☆ " << endl;
 	cout << "레벨 : " << level << endl;
 	Character::setLevel(level);
 }
 
-// 몬스터 공격 효과 함수
-void attackM() {
+// 몬스터 공격 효과 함수 - 총
+void attackGun() {
 	cout << "C ▶▶▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷ M" << endl;
 	cout << "C ▷▷▷▷▶▶▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷ M" << endl;
 	cout << "C ▷▷▷▷▷▷▷▷▶▶▷▷▷▷▷▷▷▷▷▷▷▷ M" << endl;
 	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▶▶▷▷▷▷▷▷▷▷ M" << endl;
 	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▶▶▷▷▷▷ M" << endl;
 	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▶▶ M" << endl;
+}
+
+// 몬스터 공격 효과 함수 - 칼
+void attackKnife() {
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▶▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▶▶▶▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▶▶▶▶▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▶▶▶▶▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▶▶▷▷▶▶▶▶▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▶▶▶▶▶▶▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▶▶▶▶▶▷▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▶▶▶▶▶▶▶▷▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▶▶▶▶▷▶▶▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▶▶▷▷▷▶▷▷▷▷▷▷▷▷▷ M" << endl;
+	cout << "C ▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷▷ M" << endl;
+}
+
+// 몬스터 등장 효과
+void showMonster() {
+	cout << endl;
+	cout << endl;
+	cout << " ◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◇◇◇◈◇◇◇◈◇◇◇◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◇◇◈◈◈◈◈◈◈◇◇◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◇◈◇◇◇◇◇◇◇◈◇◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◈◈◇◇◇◇◇◇◇◈◈◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◈◇◇◐◇◇◇◑◇◇◈◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◈◇◇◇◇◇◇◇◇◇◈◇◇◇◇◇ " << endl;
+	cout << " ◇◇◇◇◈◇◇◇◇▣▣▣◇◇◇◇◈◇◇◇◇ " << endl;
+	cout << " ◇◇◇◈◇◇◇◇◇◇◇◇◇◇◇◇◇◈◇◇◇ " << endl;
+	cout << " ◇◇◇◈◈◈◈◈◈◈◇◈◈◈◈◈◈◈◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◈◈◈◇◈◈◈◇◈◈◈◇◇◇◇◇ " << endl;
+	cout << " ◇◇◈◇◈◈◈◇◇◇◇◇◇◇◈◈◈◇◈◇◇ " << endl;
+	cout << " ◇◇◇◈◈◈◇◇◇◇◇◇◇◇◇◈◈◈◇◇◇ " << endl;
+	cout << " ◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇ " << endl;
+}
+
+
+//콘솔 출력색상 설정.
+void textcolor(int foreground, int background){
+	int color = foreground + background * 16;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+void youDie() {
+	textcolor(RED, BLACK);
+	cout << "○○○○○○○○○○○○○○○○○○○○○○○○○" << endl;
+	cout << "○○●○○●○○○●●○○○●○○●○○○○○○○" << endl;
+	cout << "○○●○○●○○●○○●○○●○○●○○○○○○○" << endl;
+	cout << "○○○●●○○○●○○●○○●○○●○○○○○○○" << endl;
+	cout << "○○○●●○○○●○○●○○●○○●○○○○○○○" << endl;
+	cout << "○○○●●○○○○●●○○○○●●○○○○○○○○" << endl;
+	cout << "○○○○○○○○○○○○○○○○○○○○○○○○○" << endl;
+	cout << "○○○○○○●●○○○●●●○●●●○●●○○○○" << endl;
+	cout << "○○○○○○●○●○○○●○○●○○○●○●○○○" << endl;
+	cout << "○○○○○○●○○●○○●○○●●●○●○○●○○" << endl;
+	cout << "○○○○○○●○●○○○●○○●○○○●○●○○○" << endl;
+	cout << "○○○○○○●●○○○●●●○●●●○●●○○○○" << endl;
+	cout << "○○○○○○○○○○○○○○○○○○○○○○○○○" << endl;
+	textcolor(LIGHTGRAY, BLACK);
+}
+
+
+//물약
+void showPotential() {
+	textcolor(BLUE, BLACK);
+	cout << "○○○○○○○○○○○○○○○○○○○○○○" << endl;
+	cout << "○○○○○○○●●●●●●●●○○○○○○○" << endl;
+	cout << "○○○○○○○●○○○○○○●○○○○○○○" << endl;
+	cout << "○○○○○○○●●●●●●●●○○○○○○○" << endl;
+	cout << "○○○○○○○○●○○○○●○○○○○○○○" << endl;
+	cout << "○○○○○○○○●○○○○●○○○○○○○○" << endl;
+	cout << "○○○○○●●●○○○○○○●●●○○○○○" << endl;
+	cout << "○○○○●○○○○○○○○○○○○●○○○○" << endl;
+	cout << "○○○●●●●●●●●●●●●●●●●○○○" << endl;
+	cout << "○○○●●●●●●●●●●●●●●●●○○○" << endl;
+	cout << "○○○●●●●●●●●●●●●●●●●○○○" << endl;
+	cout << "○○○●●●●●●●●●●●●●●●●○○○" << endl;
+	cout << "○○○●●●●●●●●●●●●●●●●○○○" << endl;
+	cout << "○○○○●●●●●●●●●●●●●●○○○○" << endl;
+	cout << "○○○○○○○○○○○○○○○○○○○○○○" << endl;
+	textcolor(LIGHTGRAY, BLACK);
+}
+
+void myHp(int hp) {
+	int yHp, nHp;
+	cout << "  현재 나의 HP :";
+	yHp = hp / 10;
+	nHp = 10 - yHp;
+	for (int i = 0; i < yHp; i++) {
+		cout << "■";
+	}
+	for (int j = 0; j < nHp; j++) {
+		cout << "□";
+	}
+	cout << hp << "%" << endl;
+	cout << endl;
 }
